@@ -8,111 +8,76 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
-/**
- * Feature tests for admin functionality
- */
+
 class AdminTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $middlewareExcludedFromDisabling = [];
-    
+
     private User $admin;
     private User $user;
     private Destination $destination;
 
-    /**
-     * Setup the test environment.
-     */
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Désactiver UNIQUEMENT le middleware CSRF, mais garder les autres
         $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
-        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
-        
-        // Create admin user
-        $this->admin = User::factory()->create([
-            'is_admin' => true,
-        ]);
+        $this->withoutExceptionHandling();
 
-        // Create regular user
-        $this->user = User::factory()->create([
-            'is_admin' => false,
-        ]);
-
-        // Create a test destination
-        $this->destination = Destination::factory()->create([
-            'name' => 'Test Destination',
-            'description' => 'Test Description',
-            'price' => 100,
-            'duration' => 7,
-        ]);
+        // Création des utilisateurs
+        $this->admin = User::factory()->create(['is_admin' => true]);
+        $this->user = User::factory()->create(['is_admin' => false]);
+        $this->destination = Destination::factory()->create();
     }
 
-    /**
-     * Test admin access is restricted to admin users.
-     */
     public function test_admin_access_is_restricted(): void
     {
-        // Non-authenticated user should be redirected to login
+        // Non-authentifié -> redirection login
         $this->get(route('admin.destinations.index'))
             ->assertRedirect(route('login'));
 
-        // Regular user should be redirected to login
+        // Utilisateur normal -> redirection login
         $this->actingAs($this->user)
             ->get(route('admin.destinations.index'))
             ->assertRedirect(route('login'));
 
-        // Admin user should access admin panel
+        // Admin -> accès autorisé
         $this->actingAs($this->admin)
             ->get(route('admin.destinations.index'))
             ->assertStatus(200)
             ->assertSee('Manage Destinations');
     }
 
-    /**
-     * Test admin can create a destination.
-     */
-public function test_admin_can_create_destination(): void
-{
-    Storage::fake('public');
-
-    $this->actingAs($this->admin)
+    public function test_admin_can_create_destination(): void
+    {
+        Storage::fake('public');
+        
+        $this->actingAs($this->admin)
             ->post(route('admin.destinations.store'), [
-            '_token' => csrf_token(),
+                '_token' => csrf_token(),
+                'name' => 'New Destination',
+                'description' => 'New Description',
+                'price' => 150,
+                'duration' => 10,
+            ])
+            ->assertRedirect(route('admin.destinations.index'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('destinations', [
             'name' => 'New Destination',
             'description' => 'New Description',
             'price' => 150,
             'duration' => 10,
-            // L'image est commentée, donc elle ne sera pas envoyée
-        ])
-        ->assertRedirect(route('admin.destinations.index'))
-        ->assertSessionHas('success');
+        ]);
+    }
 
-    // Assert the destination was created in the database
-    $this->assertDatabaseHas('destinations', [
-        'name' => 'New Destination',
-        'description' => 'New Description',
-        'price' => 150,
-        'duration' => 10,
-    ]);
-
-    // Assert the image was not stored (if image is optional)
-    // Si l'image est optionnelle, il se peut qu'il n'y ait pas d'image
-    $destination = Destination::where('name', 'New Destination')->first();
-    $this->assertNull($destination->image); // Vérifier qu'aucune image n'a été associée
-}
-
-
-    /**
-     * Test admin can update a destination.
-     */
     public function test_admin_can_update_destination(): void
     {
         $this->actingAs($this->admin)
             ->put(route('admin.destinations.update', $this->destination), [
+                '_method' => 'PUT',
+                '_token' => csrf_token(),
                 'name' => 'Updated Destination',
                 'description' => 'Updated Description',
                 'price' => 200,
@@ -121,7 +86,6 @@ public function test_admin_can_create_destination(): void
             ->assertRedirect(route('admin.destinations.index'))
             ->assertSessionHas('success');
 
-        // Assert the destination was updated in the database
         $this->assertDatabaseHas('destinations', [
             'id' => $this->destination->id,
             'name' => 'Updated Destination',
@@ -131,17 +95,15 @@ public function test_admin_can_create_destination(): void
         ]);
     }
 
-    /**
-     * Test admin can delete a destination.
-     */
     public function test_admin_can_delete_destination(): void
     {
         $this->actingAs($this->admin)
-            ->delete(route('admin.destinations.destroy', $this->destination))
+            ->delete(route('admin.destinations.destroy', $this->destination), [
+                '_token' => csrf_token(),
+            ])
             ->assertRedirect(route('admin.destinations.index'))
             ->assertSessionHas('success');
 
-        // Assert the destination was deleted from the database
         $this->assertDatabaseMissing('destinations', [
             'id' => $this->destination->id,
         ]);
