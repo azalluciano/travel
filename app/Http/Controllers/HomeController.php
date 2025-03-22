@@ -2,27 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Destination;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class HomeController extends Controller
 {
     /**
-     * Create a new controller instance.
+     * Display the home page with all destinations.
      *
-     * @return void
+     * @return \Illuminate\View\View
      */
-    public function __construct()
+    public function index(): View
     {
-        $this->middleware('auth');
-    }
-
-    /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Contracts\Support\Renderable
-     */
-    public function index()
-    {
-        return view('home');
+        $destinations = Destination::all();
+        return view('home', compact('destinations'));
     }
 }

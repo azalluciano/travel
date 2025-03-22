@@ -5,6 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Destination model representing a travel destination
+ * 
+ * @property int $id
+ * @property string $name
+ * @property string $description
+ * @property float $price
+ * @property int $duration
+ * @property string $image
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ */
 class Destination extends Model
 {
     use HasFactory;
@@ -12,23 +24,23 @@ class Destination extends Model
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var array<string>
      */
     protected $fillable = [
         'name',
         'description',
         'price',
         'duration',
-        'image'
+        'image',
     ];
 
     /**
-     * Get the formatted price with currency symbol.
+     * The attributes that should be cast.
      *
-     * @return string
+     * @var array<string, string>
      */
-    public function getFormattedPriceAttribute()
-    {
-        return '$' . number_format($this->price, 2);
-    }
+    protected $casts = [
+        'price' => 'float',
+        'duration' => 'integer',
+    ];
 }
