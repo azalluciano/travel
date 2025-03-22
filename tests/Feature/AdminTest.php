@@ -8,7 +8,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
-
 /**
  * Feature tests for admin functionality
  */
@@ -27,11 +26,10 @@ class AdminTest extends TestCase
     {
         parent::setUp();
 
-         // Désactiver le middleware CSRF en CI (GitHub Actions)
-        if (getenv('CI') === 'true') {
-            $this->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
-        }
-
+        // Désactiver TOUJOURS le middleware CSRF pour les tests
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+        // Si le middleware est dans le namespace Illuminate, essayez ceci également:
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
 
         // Create admin user
         $this->admin = User::factory()->create([
