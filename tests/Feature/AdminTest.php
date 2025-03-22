@@ -27,6 +27,12 @@ class AdminTest extends TestCase
     {
         parent::setUp();
 
+         // Désactiver le middleware CSRF en CI (GitHub Actions)
+        if (getenv('CI') === 'true') {
+            $this->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+        }
+
+
         // Create admin user
         $this->admin = User::factory()->create([
             'is_admin' => true,
