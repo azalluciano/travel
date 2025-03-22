@@ -80,7 +80,8 @@ public function test_admin_can_create_destination(): void
     Storage::fake('public');
 
     $this->actingAs($this->admin)
-        ->post(route('admin.destinations.store'), [
+            ->post(route('admin.destinations.store'), [
+            '_token' => csrf_token(),
             'name' => 'New Destination',
             'description' => 'New Description',
             'price' => 150,
