@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-start-period=30s
+          --health-retries=5
+
+    steps:
+    # Étape 1 : Vérification du code source
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Étape 2 : Configuration de PHP 8.2
+    - name: Set up PHP 8.2
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, bcmath, curl, xml, zip, gd, pdo, pdo_mysql
+
+    # Étape 3 : Installation des dépendances avec Composer
+    - name: Install dependencies
+      run: |
+        composer install --no-interaction
+
+    # Étape 4 : Configuration de l'environnement
+    - name: Set up .env file
+      run: |
+        cp .env.example .env
+        php artisan key:generate
+        # Configuration MySQL dans .env
+        sed -i 's/DB_HOST=127.0.0.1/DB_HOST=localhost/' .env
+        sed -i 's/DB_DATABASE=your_database/DB_DATABASE=test_db/' .env
+        sed -i 's/DB_USERNAME=root/DB_USERNAME=root/' .env
+        sed -i 's/DB_PASSWORD=/DB_PASSWORD=root/' .env
+
+    # Étape 5 : Exécution des migrations et des seeders
+    - name: Migrate and Seed Database
+      run: |
+        php artisan migrate --force
+        php artisan db:seed --force
+
+    # Étape 6 : Exécution des tests
+    - name: Run tests
+      run: php artisan test --env=testing
