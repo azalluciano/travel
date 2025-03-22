@@ -71,4 +71,4 @@ jobs:
       - name: Run tests
         env:
           CI: "true" # Définit explicitement la variable CI=true pour les tests
-        run: php artisan test --env=testing --verbose # Mode verbose pour plus de détails en cas d'échec
+        run: php artisan test --env=testing
