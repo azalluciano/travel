@@ -28,8 +28,9 @@ class AdminTest extends TestCase
     {
         parent::setUp();
 
-        // Déclaration explicite pour désactiver tous les middleware (incluant le CSRF)
-        $this->withoutMiddleware();
+        // Désactiver UNIQUEMENT le middleware CSRF, mais garder les autres
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
         
         // Create admin user
         $this->admin = User::factory()->create([
