@@ -15,6 +15,8 @@ class AdminTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected $middlewareExcludedFromDisabling = [];
+    
     private User $admin;
     private User $user;
     private Destination $destination;
@@ -26,11 +28,9 @@ class AdminTest extends TestCase
     {
         parent::setUp();
 
-        // Désactiver TOUJOURS le middleware CSRF pour les tests
-        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
-        // Si le middleware est dans le namespace Illuminate, essayez ceci également:
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
-
+        // Déclaration explicite pour désactiver tous les middleware (incluant le CSRF)
+        $this->withoutMiddleware();
+        
         // Create admin user
         $this->admin = User::factory()->create([
             'is_admin' => true,
