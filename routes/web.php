@@ -35,3 +35,4 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     Route::put('/destinations/{destination}', [AdminController::class, 'update'])->name('destinations.update');
     Route::delete('/destinations/{destination}', [AdminController::class, 'destroy'])->name('destinations.destroy');
 });
+

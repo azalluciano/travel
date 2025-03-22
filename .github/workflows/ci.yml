@@ -1,74 +1,63 @@
 name: CI
 
-# Définir quand le workflow doit s'exécuter
 on:
   push:
     branches:
-      - develop # S'exécute sur les push vers la branche develop
+      - develop
   pull_request:
     branches:
-      - develop # S'exécute sur les pull requests vers develop
+      - develop
 
 jobs:
   test:
-    runs-on: ubuntu-latest # Utilise la dernière version d'Ubuntu
+    runs-on: ubuntu-latest
 
-    # Configuration du service MySQL pour les tests
     services:
       mysql:
-        image: mysql:8.0 # Utilise MySQL 8.0
+        image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: root # Mot de passe root
-          MYSQL_DATABASE: test_db # Nom de la base de données
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
         ports:
-          - 3306:3306 # Exposer le port MySQL
-        options: >- # Options de santé pour s'assurer que MySQL est prêt
+          - 3306:3306
+        options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-start-period=30s
           --health-retries=5
 
     steps:
-      # Étape 1: Récupération du code source du repository
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      # Étape 2: Configuration de PHP 8.2 avec les extensions nécessaires
       - name: Set up PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: mbstring, bcmath, curl, xml, zip, gd, pdo, pdo_mysql
+          extensions: mbstring, bcmath, curl, xml, zip, gd, pdo, pdo_mysql, sqlite3
 
-      # Étape 3: Installation des dépendances via Composer
       - name: Install dependencies
-        run: |
-          composer install --no-interaction
+        run: composer install --no-interaction --optimize-autoloader
 
-      # Étape 4: Configuration du fichier d'environnement
       - name: Set up .env file
         run: |
           cp .env.example .env
           php artisan key:generate
-          # Configuration de la base de données MySQL dans .env
           sed -i 's/DB_HOST=127.0.0.1/DB_HOST=localhost/' .env
           sed -i 's/DB_DATABASE=your_database/DB_DATABASE=test_db/' .env
           sed -i 's/DB_USERNAME=root/DB_USERNAME=root/' .env
           sed -i 's/DB_PASSWORD=/DB_PASSWORD=root/' .env
 
-      # Étape 5: Préparation des dossiers de stockage et configuration des permissions
       - name: Prepare storage directories
         run: |
           php artisan storage:link
           chmod -R 777 storage bootstrap/cache
 
-      # Étape 6: Exécution des migrations et seeders pour préparer la base de données
       - name: Migrate and Seed Database
         run: |
           php artisan migrate --force
           php artisan db:seed --force
 
-      # Étape 7: Exécution des tests avec variable CI explicitement définie
       - name: Run tests
         env:
-          CI: "true" # Définit explicitement la variable CI=true pour les tests
-        run: php artisan test --env=testing
+          CI: "true"
+        run: vendor/bin/phpunit --stop-on-failure --colors=always
